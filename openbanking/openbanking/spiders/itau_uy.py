@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from openbanking-api.app.openbanking.items import AccountBalance
+from openbanking.items import AccountBalance
+from openbanking.items import Movement
 
-from openbanking-api.app.openbanking.items import Movement
 import scrapy
 from scrapy_splash import SplashFormRequest
 import locale
@@ -26,12 +26,6 @@ class ItauUySpider(scrapy.Spider):
     # Set setting in the init method
     def __init__(self, *args, **kwargs):
         super(ItauUySpider, self).__init__(*args, **kwargs)
-        
-        if self.settings.get('ITAU_UY_CI', None) is None:
-            raise ValueError('ITAU_UY_CI setting is required')
-        
-        if self.settings.get('ITAU_UY_PASSWORD', None) is None:
-            raise ValueError('ITAU_UY_PASSWORD setting is required')
         
         locale.setlocale(locale.LC_NUMERIC, 'es_UY.UTF-8')
 

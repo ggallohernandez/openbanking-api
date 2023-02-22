@@ -1,0 +1,4 @@
+dbs/
+logs/
+__pycache__/
+*.pid
