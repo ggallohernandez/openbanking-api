@@ -2,3 +2,6 @@ dbs/
 logs/
 __pycache__/
 *.pid
+build/
+dist/
+project.egg-info
