@@ -70,15 +70,15 @@ class ItauUySpider(scrapy.Spider):
             # Extract some information from the dashboard page
             
             for row in response.css('.table-cajas-de-ahorro tbody tr'):
-                fields = row.css('td::text').getall()
-                soup = BeautifulSoup(row.css('td')[1].get())
-            
+                fields = row.css('td')
+                soup = BeautifulSoup(fields[1].get())
+                
                 yield Movement(
                     account_number=account,
-                    date=datetime.strptime(fields[0].strip(), '%d-%m-%y'),
+                    date=datetime.strptime(fields[0].css('::text').get().strip(), '%d-%m-%y') if fields[0].css('::text') else datetime.now(),
                     description=soup.get_text().strip(),
-                    amount=-locale.atof(fields[2].strip()) if fields[2].strip() else locale.atof(fields[3].strip()),
-                    balance=locale.atof(fields[4].strip()),
+                    amount=-locale.atof(fields[2].css('::text').get().strip()) if fields[2].css('::text') else (locale.atof(fields[3].css('::text').get().strip()) if fields[3].css('::text') else 0),
+                    balance=locale.atof(fields[4].css('::text').get().strip()),
                 )
         else:
             self.logger.error("Account selection failed")
