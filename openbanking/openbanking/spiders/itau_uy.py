@@ -4,19 +4,10 @@ from openbanking.items import AccountBalance
 from openbanking.items import Movement
 
 import scrapy
-from scrapy_splash import SplashFormRequest
 import locale
 
-account_chooser="""
-function main(splash)
-    splash:wait(1)
-    splash:runjs('document.querySelector("#cajasDeAhorro a").click()')
-    splash:wait(1)
-    return {
-        html = splash:html(),
-    }
-end
-"""
+from scrapy_playwright.page import PageMethod
+from bs4 import BeautifulSoup
 
 class ItauUySpider(scrapy.Spider):
     name = "itau_uy"
@@ -29,56 +20,65 @@ class ItauUySpider(scrapy.Spider):
         
         locale.setlocale(locale.LC_NUMERIC, 'es_UY.UTF-8')
 
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(url, meta={'playwright': True})
+
     def parse(self, response):
         # Find the login form and fill in the inputs with ID documento and ID pass
-        return SplashFormRequest.from_response(
+        yield scrapy.FormRequest.from_response(
             response,
             formid='acceso_hb',
             formdata={
+                'segmento': 'panelPersona',
                 'tipo_documento': '1',
                 'nro_documento': self.settings.get('ITAU_UY_CI'),
                 'pass': self.settings.get('ITAU_UY_PASSWORD'),
+                'password': self.settings.get('ITAU_UY_PASSWORD'),
                 'id': 'login',
-                'tipo_usuario': 'R'
+                'tipo_usuario': 'R',
+                'bfpstatus': '5'
             },
+            meta={'playwright': True},
             callback=self.after_login
         )
 
     def after_login(self, response):
         # Check if the login was successful
-        account = response.css('.cuenta-numero').get()
+        account = response.css('.cuenta-numero::text').get().strip()
         
         if account:
             self.logger.info("Login successful")
             # Extract some information from the dashboard page
-            yield AccountBalance({
-                'account': response.css('.cuenta-numero').get(),
-                'balance': locale.atof(response.css('.saldo-valor').get()),
-            })
-            
-            return SplashFormRequest.from_response(
-                response,
-                args = {'lua_source': account_chooser, 'timeout': 5},
-                callback=self.after_select_account
+            yield AccountBalance(
+                account_number=account,
+                balance=locale.atof(response.css('.saldo-valor::text').get().strip()),
             )
+            
+            yield scrapy.Request(url=f"https://www.itaulink.com.uy{response.css('#cajasDeAhorro a::attr(href)').get()}", 
+                                 meta={'playwright': True},
+                                 callback=self.after_select_account)
+
         else:
             self.logger.error("Login failed")
 
     def after_select_account(self, response):
-        account = response.css('.cuenta-numero').get()
+        account = response.css('.cuenta-numero::text').get().strip()
         
         if account:
             self.logger.info(f"Account #{account} selected")
             # Extract some information from the dashboard page
             
-            for row in response.css('.table-cajas-de-ahorro tr'):
-                fields = row.css('td').getall()
-                yield Movement({
-                    'account': account,
-                    'date': datetime.strptime(fields[0], '%d-%m-%y').date(),
-                    'description': fields[1],
-                    'amount': -locale.atof(fields[2]) if fields[2] else locale.atof(fields[3]),
-                    'balance': locale.atof(fields[4]),
-                })
+            for row in response.css('.table-cajas-de-ahorro tbody tr'):
+                fields = row.css('td::text').getall()
+                soup = BeautifulSoup(row.css('td')[1].get())
+            
+                yield Movement(
+                    account_number=account,
+                    date=datetime.strptime(fields[0].strip(), '%d-%m-%y'),
+                    description=soup.get_text().strip(),
+                    amount=-locale.atof(fields[2].strip()) if fields[2].strip() else locale.atof(fields[3].strip()),
+                    balance=locale.atof(fields[4].strip()),
+                )
         else:
             self.logger.error("Account selection failed")

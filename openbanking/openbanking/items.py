@@ -13,6 +13,7 @@ class AccountBalance:
     balance: float
     pass
 
+@dataclass
 class Movement:
     account_number: str
     date: datetime.datetime
