@@ -20,32 +20,23 @@ class ItauUySpider(scrapy.Spider):
         
         locale.setlocale(locale.LC_NUMERIC, 'es_UY.UTF-8')
 
-    def start_requests(self):
-        for url in self.start_urls:
-            yield scrapy.Request(url, meta={'playwright': True})
-
     def parse(self, response):
         # Find the login form and fill in the inputs with ID documento and ID pass
         yield scrapy.FormRequest.from_response(
             response,
             formid='acceso_hb',
             formdata={
-                'segmento': 'panelPersona',
                 'tipo_documento': '1',
                 'nro_documento': self.settings.get('ITAU_UY_CI'),
                 'pass': self.settings.get('ITAU_UY_PASSWORD'),
-                'password': self.settings.get('ITAU_UY_PASSWORD'),
-                'id': 'login',
                 'tipo_usuario': 'R',
-                'bfpstatus': '5'
             },
-            meta={'playwright': True},
             callback=self.after_login
         )
 
     def after_login(self, response):
         # Check if the login was successful
-        account = response.css('.cuenta-numero::text').get().strip()
+        account = response.css('.cuenta-numero::text').get()
         
         if account:
             self.logger.info("Login successful")
@@ -56,14 +47,13 @@ class ItauUySpider(scrapy.Spider):
             )
             
             yield scrapy.Request(url=f"https://www.itaulink.com.uy{response.css('#cajasDeAhorro a::attr(href)').get()}", 
-                                 meta={'playwright': True},
                                  callback=self.after_select_account)
 
         else:
             self.logger.error("Login failed")
 
     def after_select_account(self, response):
-        account = response.css('.cuenta-numero::text').get().strip()
+        account = response.css('.cuenta-numero::text').get()
         
         if account:
             self.logger.info(f"Account #{account} selected")

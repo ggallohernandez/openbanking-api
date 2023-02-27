@@ -7,6 +7,7 @@ from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+import scrapy
 
 
 class OpenbankingSpiderMiddleware:
@@ -32,9 +33,11 @@ class OpenbankingSpiderMiddleware:
         # Called with the results returned from the Spider, after
         # it has processed the response.
 
-        # Must return an iterable of Request, or item objects.
-        for i in result:
-            yield i
+        for obj in result:
+            if isinstance(obj, scrapy.Request):
+                obj.meta.setdefault("playwright", True)
+            yield obj
+
 
     def process_spider_exception(self, response, exception, spider):
         # Called when a spider or process_spider_input() method

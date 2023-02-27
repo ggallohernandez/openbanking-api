@@ -17,7 +17,7 @@ RUN apt update && apt -y install locales && \
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN playwright install chromium && playwright install-deps
+RUN playwright install && playwright install-deps
 
 # Expose the port that Scrapy will run on
 EXPOSE 6800
