@@ -6,3 +6,5 @@ scrapyd-client==1.2.3
 beautifulsoup4==4.11.2
 pygsheets==2.0.6
 pandas==1.5.3
+google-cloud-bigquery==3.6.0
+

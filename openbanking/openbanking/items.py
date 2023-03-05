@@ -4,20 +4,32 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
-from dataclasses import dataclass
-import datetime
+from dataclasses import dataclass, field, asdict
+from datetime import datetime
 
-@dataclass
+
+@dataclass(frozen=True)
 class AccountBalance:
-    account_number: str
-    balance: float
-    pass
+    account_number: str = field(hash=True)
+    balance: float = field(hash=True)
+    uid: str = field(hash=False, default='')
+    source: str = field(hash=True, default='') 
+    seen_at: datetime = field(hash=True, default=datetime.now())
+    
+    def dict(self):
+        return {k: str(v) for k, v in asdict(self).items()}
+        
 
-@dataclass
+@dataclass(frozen=True)
 class Movement:
-    account_number: str
-    date: datetime.datetime
-    description: str
-    amount: float
-    balance: float
-    pass
+    account_number: str = field(hash=True)
+    amount: float = field(hash=True)
+    date: datetime = field(hash=True)
+    balance: float = field(hash=True)
+    uid:str = field(hash=False, default='')
+    source: str = field(hash=True, default='')
+    seen_at: datetime = field(hash=False, default=datetime.now())
+    description: str = field(hash=True, default='')
+    
+    def dict(self):
+        return {k: str(v) for k, v in asdict(self).items()}

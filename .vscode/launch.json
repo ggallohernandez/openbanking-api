@@ -15,6 +15,21 @@
                 "${fileBasenameNoExtension}"
             ],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python launch unit tests",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "cwd": "${workspaceFolder}/openbanking",
+            "args": [
+                "discover",
+                "-v",
+                "-s",
+                ".",
+                "-p",
+                "tests.py"
+            ],
         }
     ]
 }

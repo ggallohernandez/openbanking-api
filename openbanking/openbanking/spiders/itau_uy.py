@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from openbanking.items import AccountBalance
-from openbanking.items import Movement
+from openbanking.items import Movement, AccountBalance
 
 import scrapy
 import locale
@@ -19,6 +18,20 @@ class ItauUySpider(scrapy.Spider):
         super(ItauUySpider, self).__init__(*args, **kwargs)
         
         locale.setlocale(locale.LC_NUMERIC, 'es_UY.UTF-8')
+    
+    # start requests
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(
+                url,
+                meta=dict(
+                    playwright=True,
+                    playwright_page_methods=[
+                        #PageMethod("screenshot", path="1.png", full_page=True),
+                    ]
+                ),
+                callback=self.parse,
+            )
 
     def parse(self, response):
         # Find the login form and fill in the inputs with ID documento and ID pass
@@ -31,10 +44,16 @@ class ItauUySpider(scrapy.Spider):
                 'pass': self.settings.get('ITAU_UY_PASSWORD'),
                 'tipo_usuario': 'R',
             },
-            callback=self.after_login
+            meta=dict(
+                playwright=True,
+                playwright_page_methods=[
+                    #PageMethod("screenshot", path="2.png", full_page=True),
+                ]
+            ),
+            callback=self.after_login,
         )
 
-    def after_login(self, response):
+    async def after_login(self, response):
         # Check if the login was successful
         account = response.css('.cuenta-numero::text').get()
         
@@ -46,18 +65,27 @@ class ItauUySpider(scrapy.Spider):
                 balance=locale.atof(response.css('.saldo-valor::text').get().strip()),
             )
             
-            yield scrapy.Request(url=f"https://www.itaulink.com.uy{response.css('#cajasDeAhorro a::attr(href)').get()}", 
-                                 callback=self.after_select_account)
-
+            for account_link in response.css('#cajasDeAhorro a'):
+                yield response.follow(
+                    account_link,
+                    meta=dict(
+                        playwright=True,
+                        playwright_include_page=True,
+                        playwright_page_methods=[
+                            #PageMethod("screenshot", path="3.png", full_page=True),
+                        ]
+                    ),
+                    callback=self.after_select_account
+                )
         else:
             self.logger.error("Login failed")
-
-    def after_select_account(self, response):
+            
+    async def after_select_account(self, response):
         account = response.css('.cuenta-numero::text').get()
         
         if account:
             self.logger.info(f"Account #{account} selected")
-            # Extract some information from the dashboard page
+            # Extract somere information from the dashboard page
             
             for row in response.css('.table-cajas-de-ahorro tbody tr'):
                 fields = row.css('td')
