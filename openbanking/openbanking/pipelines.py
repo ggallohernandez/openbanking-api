@@ -7,6 +7,7 @@
 # useful for handling different item types with a single interface
 from datetime import datetime
 from itemadapter import ItemAdapter
+from google.api_core import retry
 from openbanking.helpers import dict_hash, get_checksum
 from scrapy.exceptions import DropItem
 from google.cloud import bigquery
@@ -18,12 +19,11 @@ from openbanking.items import Movement, AccountBalance
 class HashItem:
     def process_item(self, item, spider):
         c = replace(item, source=spider.name)
-        return replace(c, uid=get_checksum(c))
+        return replace(c, uid=c.calculate_uid())
 
-class DedupMovements:
+class DedupItems:
     def __init__(self):
         self.client = bigquery.Client()
-        pass
 
     def process_item(self, item, spider):
         if isinstance(item, Movement):
@@ -41,18 +41,7 @@ class DedupMovements:
 
             if query_job.result().total_rows:
                 raise DropItem("Duplicate item found: %s" % item)
-
-            return item
-        
-        return item
-    
-class DedupBalances:
-    def __init__(self):
-        self.client = bigquery.Client()
-        pass
-
-    def process_item(self, item, spider):
-        if isinstance(item, AccountBalance):
+        elif isinstance(item, AccountBalance):
             query = """
                 SELECT uid
                 FROM `openbanking-379605.openbanking.account_balances`
@@ -67,9 +56,9 @@ class DedupBalances:
 
             if query_job.result().total_rows:
                 raise DropItem("Duplicate item found: %s" % item)
+        else:
+            raise DropItem("Unknown item type: %s" % item)
 
-            return item
-        
         return item
     
 class UploadToBigQuery:
@@ -78,9 +67,9 @@ class UploadToBigQuery:
     
     def process_item(self, item, spider):
         if isinstance(item, Movement):
-            self.client.insert_rows_json('openbanking-379605.openbanking.account_movements', [item.dict()])
+            self.client.insert_rows_json('openbanking-379605.openbanking.account_movements', [item.dict()], retry=retry.Retry(timeout=30))
         elif isinstance(item, AccountBalance):
-            self.client.insert_rows_json('openbanking-379605.openbanking.account_balances', [item.dict()])
+            self.client.insert_rows_json('openbanking-379605.openbanking.account_balances', [item.dict()], retry=retry.Retry(timeout=30))
         else:
             raise DropItem("Unknown item type: %s" % item)
         

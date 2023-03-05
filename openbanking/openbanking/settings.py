@@ -76,8 +76,7 @@ DOWNLOAD_HANDLERS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "openbanking.pipelines.HashItem": 300,
-    "openbanking.pipelines.DedupMovements": 400,
-    "openbanking.pipelines.DedupBalances": 400,
+    "openbanking.pipelines.DedupItems": 400,
     "openbanking.pipelines.UploadToBigQuery": 500,
 }
 

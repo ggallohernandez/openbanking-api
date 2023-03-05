@@ -13,3 +13,7 @@ def dict_hash(dictionary):
 def get_checksum(item):
     """Get a checksum of the item."""
     return hashlib.md5(str(item.__hash__()).encode("utf8")).hexdigest()
+
+def get_string_checksum(s):
+    """Get a checksum of the item."""
+    return hashlib.md5(s.encode("utf8")).hexdigest()
