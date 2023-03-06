@@ -22,5 +22,7 @@ RUN playwright install && playwright install-deps
 # Expose the port that Scrapy will run on
 EXPOSE 6800
 
+RUN scrapyd-deploy -p openbanking
+
 # Start the Scrapy project using the scrapyd service
 CMD ["scrapyd"]
