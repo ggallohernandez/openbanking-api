@@ -15,6 +15,7 @@ class ItauUySpider(scrapy.Spider):
     
     # Set setting in the init method
     def __init__(self, current="1", historical="0", *args, **kwargs):
+        self.logger.info(f"ItauUySpider: current={current}, historical={historical}")
         super(ItauUySpider, self).__init__(*args, **kwargs)
         
         locale.setlocale(locale.LC_NUMERIC, 'es_UY.UTF-8')
