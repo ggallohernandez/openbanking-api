@@ -103,6 +103,19 @@ class ItauUySpider(scrapy.Spider):
                         amount=-locale.atof(fields[2].css('::text').get().strip()) if fields[2].css('::text') else (locale.atof(fields[3].css('::text').get().strip()) if fields[3].css('::text') else 0),
                         balance=locale.atof(fields[4].css('::text').get().strip()),
                     )
+                
+                for option in response.css('#consultaHistorica select option::attr(value)')[1:2]:
+                    yield response.follow(
+                        f'{response.url}?periodo={option.get()}',
+                        meta=dict(
+                            playwright=True,
+                            playwright_page_methods=[
+                                PageMethod("evaluate", "$('#consultaHistorica select').val('"+ option.get() +"').change()"),
+                                PageMethod("wait_for_timeout", 500),
+                            ]
+                        ),
+                        callback=self.after_select_period
+                    )
             
             if self.historical:
                 for option in response.css('#consultaHistorica select option::attr(value)')[1:]:
