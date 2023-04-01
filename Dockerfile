@@ -22,7 +22,5 @@ RUN playwright install && playwright install-deps
 # Expose the port that Scrapy will run on
 EXPOSE 6800
 
-RUN scrapyd-deploy -p openbanking
-
-# Start the Scrapy project using the scrapyd service
-CMD ["scrapyd"]
+# Set bash monitor mode on; run server on the background, deploy eggs, get server to the foreground again.
+CMD ["sh", "start.sh"]

@@ -1,0 +1,12 @@
+[Unit]
+Description=Scrapyd service
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/app/openbanking
+ExecStart=/usr/local/bin/scrapyd
+
+[Install]
+WantedBy=multi-user.target

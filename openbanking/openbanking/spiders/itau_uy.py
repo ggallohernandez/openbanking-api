@@ -91,7 +91,17 @@ class ItauUySpider(scrapy.Spider):
             # Extract somere information from the dashboard page
             
             if self.current:
-                self.after_select_period(response)
+                for row in response.css('.table-cajas-de-ahorro tbody tr'):
+                    fields = row.css('td')
+                    soup = BeautifulSoup(fields[1].get())
+                    
+                    yield Movement(
+                        account_number=account,
+                        date=datetime.strptime(fields[0].css('::text').get().strip(), '%d-%m-%y').strftime('%Y-%m-%d') if fields[0].css('::text') else datetime.now().strftime('%y-%m-%d'),
+                        description=soup.get_text().strip(),
+                        amount=-locale.atof(fields[2].css('::text').get().strip()) if fields[2].css('::text') else (locale.atof(fields[3].css('::text').get().strip()) if fields[3].css('::text') else 0),
+                        balance=locale.atof(fields[4].css('::text').get().strip()),
+                    )
             
             if self.historical:
                 for option in response.css('#consultaHistorica select option::attr(value)')[1:]:
